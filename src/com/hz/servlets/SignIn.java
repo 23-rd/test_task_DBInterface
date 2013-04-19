@@ -61,9 +61,10 @@ public class SignIn extends HttpServlet
         UserInfoDB[] users = new UserInfoDB[5];
         for (int i=0; i<users.length; i++)
         {
+            users[i] = new UserInfoDB();
             users[i].setLogin("login " + i);
             users[i].setPassword("password" + i);
-            users[i].setState(false);
+            users[i].setState("offline");
             session.beginTransaction();
             session.save(users[i]);
             session.getTransaction().commit();
@@ -71,7 +72,10 @@ public class SignIn extends HttpServlet
 
         String login = (String) hsession.getAttribute("login");
         String password = (String) hsession.getAttribute("password");
-        User user = new User(login, password);
+        UserInfoDB user = new UserInfoDB();
+        user.setLogin(login);
+        user.setPassword(password);
+        user.setState("online");
 
         session.beginTransaction();
         session.save(user);

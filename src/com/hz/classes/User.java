@@ -11,14 +11,22 @@ public class User
 {
     private String login;
     private String password;
+    private boolean state;
 
-    public User(String login, String password)
+    public boolean isState() {
+        return state;
+    }
+
+    public void setState(boolean state) {
+        this.state = state;
+    }
+
+    public User(String login, String password, boolean b)
     {
         this.login = login;
         this.password = password;
+        this.state = b;
     }
-
-    public User() { }
 
     public String getLogin() {
         return login;

@@ -6,14 +6,15 @@ import javax.persistence.*;
 @Table(name = ("UserInfo"))
 public class UserInfoDB
 {
-    @Id @GeneratedValue (strategy = GenerationType.AUTO)
-    private String id;
-    @Column
+    @Id @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @Column (name = "id", unique = true, nullable = false)
+    private int id;
+    @Column (name = "login")
     private String login;
     @Column
     private String password;
     @Column
-    private boolean state;
+    private String state;
 
     public String getLogin() {
         return login;
@@ -31,19 +32,19 @@ public class UserInfoDB
         this.password = password;
     }
 
-    public boolean isState() {
+    public String isState() {
         return state;
     }
 
-    public void setState(boolean state) {
+    public void setState(String state) {
         this.state = state;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 }
