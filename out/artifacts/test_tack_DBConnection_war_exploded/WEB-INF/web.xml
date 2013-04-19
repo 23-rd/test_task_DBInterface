@@ -7,7 +7,7 @@
 
     <servlet>
         <servlet-name>signin</servlet-name>
-        <servlet-class>SignIn</servlet-class>
+        <servlet-class>com.hz.servlets.SignIn</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -15,29 +15,13 @@
         <url-pattern>/*</url-pattern>
     </servlet-mapping>
 
-    <servlet>
-        <servlet-name>default</servlet-name>
-        <servlet-class>
-            org.apache.catalina.servlets.DefaultServlet
-        </servlet-class>
-        <init-param>
-            <param-name>debug</param-name>
-            <param-value>0</param-value>
-        </init-param>
-        <load-on-startup>2</load-on-startup>
-    </servlet>
-
-    <servlet-mapping>
-        <servlet-name>default</servlet-name>
-        <url-pattern>/default</url-pattern>
-    </servlet-mapping>
 
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
 
     <listener>
-        <listener-class>SignIn</listener-class>
+        <listener-class>com.hz.servlets.SignIn</listener-class>
     </listener>
 
 </web-app>
