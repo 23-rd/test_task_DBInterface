@@ -9,9 +9,9 @@ public class UserInfoDB
     @Id @GeneratedValue (strategy = GenerationType.IDENTITY)
     @Column (name = "id", unique = true, nullable = false)
     private int id;
-    @Column (name = "login")
+    @Column (name = "login", unique = true, nullable = false)
     private String login;
-    @Column
+    @Column (name = "password", nullable = false)
     private String password;
     @Column
     private String state;

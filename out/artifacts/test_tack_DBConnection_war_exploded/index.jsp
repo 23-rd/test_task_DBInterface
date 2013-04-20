@@ -15,10 +15,10 @@
   <body>
       <p>Покажи мне свет </p>
       <form name="Form1"
-            method="GET"
-            action="http://localhost:5050/${pageContext.request.contextPath}/SignIn"/>
+            method="POST"
+            action="signin">
       <div>
-      <table align="center">
+      <table name="table" align="center">
           <tr>
               <td>
                   <input name="login" type="text" placeholder="login"/>
@@ -36,5 +36,6 @@
           </tr>
       </table>
   </div>
+  </form>
   </body>
 </html>

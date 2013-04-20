@@ -2,6 +2,7 @@ package com.hz.servlets;
 
 import com.hz.DB.UserInfoDB;
 import com.hz.classes.User;
+import com.hz.classes.WorkWithDBInAnotherThreat;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -29,15 +30,11 @@ import java.util.Enumeration;
  */
 public class SignIn extends HttpServlet
 {
-    private static ServiceRegistry serviceRegistry;
-    private static SessionFactory sessionFactory;
-
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        HttpSession hsession =  req.getSession();
-        String login = (String) hsession.getAttribute("login");
-        String password = (String) hsession.getAttribute("password");
+        String login = req.getParameter("login");
+        String password = req.getParameter("password");
         PrintWriter pw = resp.getWriter();
         pw.println("<B>The selected login is:  ");
         pw.println(login);
@@ -47,39 +44,12 @@ public class SignIn extends HttpServlet
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        HttpSession hsession =  req.getSession();
-
-        Configuration configuration = new Configuration();
-        configuration.configure();
-        serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration
-                .getProperties()).buildServiceRegistry();
-        sessionFactory = configuration.buildSessionFactory(serviceRegistry);
-        Session session = sessionFactory.openSession();
-
-        UserInfoDB[] users = new UserInfoDB[5];
-        for (int i=0; i<users.length; i++)
-        {
-            users[i] = new UserInfoDB();
-            users[i].setLogin("login " + i);
-            users[i].setPassword("password" + i);
-            users[i].setState("offline");
-            session.beginTransaction();
-            session.save(users[i]);
-            session.getTransaction().commit();
-        }
-
-        String login = (String) hsession.getAttribute("login");
-        String password = (String) hsession.getAttribute("password");
-        UserInfoDB user = new UserInfoDB();
-        user.setLogin(login);
-        user.setPassword(password);
-        user.setState("online");
-
-        session.beginTransaction();
-        session.save(user);
-        session.getTransaction().commit();
-        session.close();
+        WorkWithDBInAnotherThreat threat = new WorkWithDBInAnotherThreat(req.getParameter("login"),
+                req.getParameter("password"));
+        Thread t = new Thread(threat);
+        t.start();
+        doGet(req, resp);
     }
 }
