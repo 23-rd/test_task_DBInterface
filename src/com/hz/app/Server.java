@@ -13,16 +13,12 @@ import java.util.LinkedList;
  */
 public class Server extends Thread implements ServerListener {
 
-    // Хранит онлайн пользователей чата
     public LinkedList<Clients> userlist;
-    // Хранит слушателей сервера
     private LinkedList<ServerListener> listenerList;
-    // СерверСокет
     private ServerSocket serverSocket;
 
     private Clients clients;
 
-    // Конструктор
     public Server() {
         super("Chat server");
         userlist = new LinkedList<Clients>();
@@ -34,11 +30,9 @@ public class Server extends Thread implements ServerListener {
         try {
             serverSocket = new ServerSocket(port);
             start();
-            String ip = serverSocket.getInetAddress().getLocalHost().getHostAddress();
-// Нотификация события: сервер запущен
+            String ip = "localhost://";
             serverStarted(ip, port);
         } catch(Exception ex) {
-// Нотификация события: cервер прекратил работу
             serverStopped();
         }
     }
@@ -48,19 +42,16 @@ public class Server extends Thread implements ServerListener {
     @Override
     public void run() {
         while(true) {
-            try {
-// Метод accept() блочит данный поток пока не подключиться новый пользователь
+            try
+            {
                 Socket socket = serverSocket.accept();
-// Создание нового потока-обработчика для подключенного пользователя
-// он выполняется паралельно данному потоку, и ниче не блочит.
-// Сервер переходит к готовности принять новое соединение
                 Clients user = new Clients(this, socket);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
             }
         }
     }
-    /***************** отправка сообщения всем пользователям ****************/
-// sender - отправитель
+    /***************** отправка сообщения пользователeм ****************/
 
     public void sendChatMessage(Clients sender, String message) {
             for(Clients user : userlist) {
@@ -73,17 +64,25 @@ public class Server extends Thread implements ServerListener {
 
     /******************** добавление/удаление слушателей ********************/
 
-// Добавляет слушателя событий сервера
     public void addListener(ServerListener listener) {
             listenerList.add(listener);
     }
 
-    // Удаляет слушателя
     public void removeListener(ServerListener listener) {
             listenerList.remove(listener);
     }
 
-    /******************** методы интерфейса ServerListener *******************/
+    /******************** добавление/удаление онлайн пользователей ********************/
+
+    public void addUser(Clients client) {
+        userlist.add(client);
+    }
+
+    public void removeUser(Clients client) {
+        userlist.remove(client);
+    }
+
+    /******************** методы интерфейса ServerListener, getters *******************/
 
     public void serverStarted(String ip, int port) {
             for(ServerListener listener : listenerList) {
@@ -98,8 +97,7 @@ public class Server extends Thread implements ServerListener {
     }
 
     @Override
-    public void onUserConnected(Clients user)
-    {
+    public void onUserConnected(Clients user){
         for(ServerListener listener : listenerList) {
             listener.onUserConnected(user);
         }
@@ -116,4 +114,22 @@ public class Server extends Thread implements ServerListener {
                 listener.onMessageReceived(user, message);
             }
     }
+
+    public LinkedList<ServerListener> getListenerList() {
+        return listenerList;
+    }
+
+    public ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
+    public Clients getClients() {
+        return clients;
+    }
+
+    public LinkedList<Clients> getUserlist() {
+
+        return userlist;
+    }
+
 }

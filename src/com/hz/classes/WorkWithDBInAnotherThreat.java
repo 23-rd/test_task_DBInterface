@@ -7,6 +7,8 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
 
+import java.util.Date;
+
 /**
  * Created with IntelliJ IDEA.
  * User: 23-rd
@@ -28,6 +30,7 @@ public class WorkWithDBInAnotherThreat implements Runnable
     }
     @Override
     public void run() {
+
         Configuration configuration = new Configuration();
         configuration.configure();
         serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration
@@ -39,10 +42,13 @@ public class WorkWithDBInAnotherThreat implements Runnable
         user.setLogin(login);
         user.setPassword(password);
         user.setState("online");
+        user.setDate(new Date());
+        user.setPhoto("I2M2Y1ZDg.jpg");
 
         session.beginTransaction();
         session.save(user);
         session.getTransaction().commit();
+
         session.close();
     }
 }

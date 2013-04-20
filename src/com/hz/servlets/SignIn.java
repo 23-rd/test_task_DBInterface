@@ -1,5 +1,6 @@
 package com.hz.servlets;
 
+import com.hz.DB.UserInfoDB;
 import com.hz.app.Clients;
 import com.hz.app.Server;
 import com.hz.app.ServerListener;
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.Random;
 
 /**
@@ -22,18 +24,50 @@ import java.util.Random;
  */
 public class SignIn extends HttpServlet implements ServerListener
 {
+
+    private Server server;
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
+        server = new Server();
+        server.init(8080);
+        nClient("login0");
+        nClient("login1");
+        nClient("login4");
+        nClient("login3");
         String login = req.getParameter("login");
         String password = req.getParameter("password");
+        nClient(login);
         PrintWriter pw = resp.getWriter();
         pw.println("<B>The selected login is:  ");
         pw.println(login);
-        pw.println("<B>The selected password is:  ");
+        pw.println("<p><B>The selected password is:  ");
         pw.println(password);
+        synchronized (server)
+        {
+            server.notify();
+        }
+        if (server.getUserlist().size() == 0)
+        {
+            pw.println("<p><B> NoBody is online(");
+        }
+        for (int i=0; i<server.getUserlist().size(); i++)
+        {
+            try{
+                pw.println("<P><div id=\"list5\">\n" +
+                        "<li>"+ server.getUserlist().get(i).userName +"\n" +
+                        "<li>"+ server.getName() +"</li>\n" +
+                        "<li>"+ server.getUserlist().get(i).userIp +"</li>\n" +
+                        "<li>"+ server.getServerSocket().getInetAddress() + ":" +
+                        server.getServerSocket().getLocalPort() +"</li>\n" +
+                        "</li>" + "</div>");
+            }
+            catch (ArrayIndexOutOfBoundsException e)
+            {
+                e.printStackTrace();
+            }
+        }
         pw.close();
-        nClient();
     }
 
     @Override
@@ -46,13 +80,13 @@ public class SignIn extends HttpServlet implements ServerListener
         doGet(req, resp);
     }
 
-    private void nClient()
+    private void nClient(String login) throws IOException
     {
-        Random r = new Random();
-        int ran = r.nextInt(8000) + 2000 ;
-        Server server = new Server();
+        Clients client = new Clients(server);
+        client.userName = login;
+        client.userIp = "localhost://" + login;
         server.addListener(this);
-        server.init(ran);
+        server.addUser(client);
     }
 
     @Override

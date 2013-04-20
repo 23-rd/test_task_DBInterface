@@ -17,20 +17,19 @@ public class Clients extends Thread {
 
     Server chatServer = null;
 
-    // Сокет пользователя
     private Socket socket = null;
-    // Входной канал
     public BufferedReader bufferedReader = null;
-    // Выходной канал
     public PrintStream printStream = null;
-    // Имя пользователя
     public String userName = "";
-    // IP пользователя
     public String userIp = "";
 
+    public  Clients (Server server) throws IOException
+    {
+        super("User Thread");
+        this.chatServer = server;
+    }
 
-    // Конструктор
-    Clients(Server chatServer, Socket socket) throws IOException {
+    public Clients(Server chatServer, Socket socket) throws IOException {
         super("User Thread");
         this.chatServer = chatServer;
         this.socket = socket;
@@ -38,32 +37,19 @@ public class Clients extends Thread {
         printStream = new PrintStream(socket.getOutputStream(), true, "UTF-8");
         start();
     }
-    // Обработка потока
+
     @Override
     public void run() {
         try {
-// Предлагаем пользователю ввести свое имя
-            printStream.println("Enter your username: ");
-// IP пользователя
             userIp = socket.getInetAddress().getHostAddress();
-// Получаем логин пользователя
-            userName = bufferedReader.readLine(); // блокируется пока не получит строки!
-// Нотификация о подключении нового пользователя
             chatServer.onUserConnected(this);
-// Помещаем пользователя в список пользователей
             chatServer.userlist.add(this);
-// Отправляем всем сообщение
             chatServer.sendChatMessage(null, "Подключен пользователь: "+userName);
-
-// основной цикл обработки
             while(true) {
                 try {
-// Читаем новое сообщение от пользователя
                     String messageReceived = bufferedReader.readLine(); // блокируется пока не получит строки или null!
                     if(messageReceived==null) {
-// Невозможно прочитать данные, пользователь отключился от сервера
                         closeSocket();
-// Останавливаем бесконечный цикл
                         break;
                     }
                     else if(!messageReceived.isEmpty()) {
@@ -85,11 +71,8 @@ public class Clients extends Thread {
         try {
 // Нотификация: пользователь отключился
             chatServer.onUserDisconnected(this);
-// Отправляем всем сообщение
-            chatServer.sendChatMessage(null, "Отключен пользователь: "+userName);
 // Удаляем пользователя со списка онлайн
             chatServer.userlist.remove(this);
-// Закрываем потоки
             bufferedReader.close();
             printStream.close();
             socket.close();

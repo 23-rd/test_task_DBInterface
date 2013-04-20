@@ -1,6 +1,11 @@
 package com.hz.DB;
 
+import com.sun.jndi.toolkit.url.Uri;
+
 import javax.persistence.*;
+import java.awt.*;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Entity
 @Table(name = ("UserInfo"))
@@ -9,12 +14,37 @@ public class UserInfoDB
     @Id @GeneratedValue (strategy = GenerationType.IDENTITY)
     @Column (name = "id", unique = true, nullable = false)
     private int id;
+    @Basic
     @Column (name = "login", unique = true, nullable = false)
     private String login;
     @Column (name = "password", nullable = false)
     private String password;
     @Column
     private String state;
+    @Column
+    @Temporal(value = TemporalType.TIMESTAMP)
+    private Date date;
+    @Column
+    private String photo;
+
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public UserInfoDB() {
+    }
 
     public String getLogin() {
         return login;
