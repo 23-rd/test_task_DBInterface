@@ -15,14 +15,13 @@ public class UserInfoDB
     @Column (name = "id", unique = true, nullable = false)
     private int id;
     @Basic
-    @Column (name = "login", unique = true, nullable = false)
+    @Column (name = "login")
     private String login;
-    @Column (name = "password", nullable = false)
+    @Column (name = "password")
     private String password;
     @Column
     private String state;
     @Column
-    @Temporal(value = TemporalType.TIMESTAMP)
     private Date date;
     @Column
     private String photo;

@@ -1,8 +1,17 @@
 package com.hz.app;
 
+import com.hz.classes.WorkWithDBInAnotherThreat;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
+
 
 /**
  * Created with IntelliJ IDEA.
@@ -20,7 +29,7 @@ public class Server extends Thread implements ServerListener {
     private Clients clients;
 
     public Server() {
-        super("Chat server");
+        super("Server");
         userlist = new LinkedList<Clients>();
         listenerList = new LinkedList<ServerListener>();
     }
@@ -30,7 +39,7 @@ public class Server extends Thread implements ServerListener {
         try {
             serverSocket = new ServerSocket(port);
             start();
-            String ip = "localhost://";
+            String ip = "127.0.0.1";
             serverStarted(ip, port);
         } catch(Exception ex) {
             serverStopped();
@@ -45,19 +54,50 @@ public class Server extends Thread implements ServerListener {
             try
             {
                 Socket socket = serverSocket.accept();
-                Clients user = new Clients(this, socket);
+                System.out.println("Client connected");
+                Clients clients1 = new Clients(this, socket);
+                BufferedReader in  = new BufferedReader(new
+                        InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(),true);
+                String input;
+                while ((input = in.readLine()) != null) {
+                    if (input.equalsIgnoreCase("exit")) break;
+                    String inp =new String(input.getBytes("UTF-8"),"windows-1251");
+                    out.println("S ::: "+input);
+                    System.out.println(input);
+                }
             }
             catch (Exception ex) {
             }
         }
     }
+
     /***************** отправка сообщения пользователeм ****************/
 
-    public void sendChatMessage(Clients sender, String message) {
+    public void sendMessage(Clients sender, String message) {
             for(Clients user : userlist) {
                 try {
                     user.printStream.println("<"+(sender!=null ? sender.userName : "server")+"> "+message);
                 } catch (Exception ex) {}
+                if (message.contains("kick"))
+                {
+                    String[] temp = message.split("kick ");
+                    String kickclient = temp[temp.length-1];
+                    int t = 0;
+                    for (Clients u : userlist)
+                    {
+                        if (u.userName == kickclient)
+                        {
+                            t = userlist.indexOf(u);
+                            u.closeSocket();
+                            //userlist.remove(t);
+                            //removeUser(userlist.get(t));
+                        }
+
+                    }
+
+
+                }
             }
 
     }
@@ -79,7 +119,10 @@ public class Server extends Thread implements ServerListener {
     }
 
     public void removeUser(Clients client) {
-        userlist.remove(client);
+        String q = "UPDATE users.userinfo SET state='offline', DATE = '"+
+                new Date()+"' WHERE login= \"" + client.userName +"\"";
+        WorkWithDBInAnotherThreat db = new WorkWithDBInAnotherThreat(null, null);
+        db.SQLQ(q);
     }
 
     /******************** методы интерфейса ServerListener, getters *******************/

@@ -1,9 +1,6 @@
 package com.hz.app;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.Socket;
 
 /**
@@ -15,48 +12,79 @@ import java.net.Socket;
  */
 public class Clients extends Thread {
 
-    Server chatServer = null;
+    Server server = null;
 
     private Socket socket = null;
     public BufferedReader bufferedReader = null;
     public PrintStream printStream = null;
     public String userName = "";
     public String userIp = "";
+    private String message;
 
-    public  Clients (Server server) throws IOException
+/*
+    public Clients (Server server) throws IOException
     {
         super("User Thread");
-        this.chatServer = server;
+        this.server = server;
+    }
+*/
+
+    public Clients(Server server) throws IOException {
+        super("User Thread");
+        this.server = server;
+        this.socket = new Socket("127.0.0.1", 8080);
+        bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+        printStream = new PrintStream(socket.getOutputStream(), true, "UTF-8");
+        start();
     }
 
-    public Clients(Server chatServer, Socket socket) throws IOException {
+    public Clients(Server server, Socket socket) throws IOException {
         super("User Thread");
-        this.chatServer = chatServer;
+        this.server = server;
         this.socket = socket;
         bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
         printStream = new PrintStream(socket.getOutputStream(), true, "UTF-8");
         start();
     }
 
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
+    public void sendMessage(String message) throws IOException {
+        this.message = message;
+        //String m = new String(message.getBytes("UTF-8"),"windows-1251");
+        StringReader sr = new StringReader(message);
+        BufferedReader in  = new BufferedReader(sr);
+        PrintWriter    out = new PrintWriter(getSocket().getOutputStream(),true);
+
+        out.println(in);
+        server.sendMessage(this, message);
+    }
+
     @Override
     public void run() {
         try {
             userIp = socket.getInetAddress().getHostAddress();
-            chatServer.onUserConnected(this);
-            chatServer.userlist.add(this);
-            chatServer.sendChatMessage(null, "Подключен пользователь: "+userName);
+            server.onUserConnected(this);
+            server.userlist.add(this);
+            server.sendMessage(null, "Connectet user : "+userName);
             while(true) {
                 try {
-                    String messageReceived = bufferedReader.readLine(); // блокируется пока не получит строки или null!
+                    String messageReceived = message; // блокируется пока не получит строки или null!
                     if(messageReceived==null) {
-                        closeSocket();
+                        //closeSocket();
                         break;
                     }
                     else if(!messageReceived.isEmpty()) {
 // Нотификация: получено сообщение
-                        chatServer.onMessageReceived(this, messageReceived);
+                        server.onMessageReceived(this, messageReceived);
 // Отправляем всем сообщение
-                        chatServer.sendChatMessage(this, messageReceived);
+                        server.sendMessage(this, messageReceived);
                     }
                 } catch (Exception ex) {
                     closeSocket();
@@ -67,12 +95,12 @@ public class Clients extends Thread {
     }
 
     // Удаляет пользователя из списка онлайн пользователей и освобождает ресурсы сокета
-    private void closeSocket() {
+    public void closeSocket() {
         try {
 // Нотификация: пользователь отключился
-            chatServer.onUserDisconnected(this);
+            server.onUserDisconnected(this);
 // Удаляем пользователя со списка онлайн
-            chatServer.userlist.remove(this);
+            //server.userlist.remove(this);
             bufferedReader.close();
             printStream.close();
             socket.close();

@@ -5,6 +5,8 @@ import com.hz.app.Clients;
 import com.hz.app.Server;
 import com.hz.app.ServerListener;
 import com.hz.classes.WorkWithDBInAnotherThreat;
+import org.hibernate.Query;
+import org.hibernate.Session;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -26,18 +28,52 @@ public class SignIn extends HttpServlet implements ServerListener
 {
 
     private Server server;
+    private Clients client;
+    private String login;
+    private String password;
+    private WorkWithDBInAnotherThreat work;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
+        PrintWriter out = resp.getWriter();
+        Enumeration flds = req.getParameterNames();
+        String n = req.getParameter("name");
+        int result = 0;
+        for (int i=0; i<server.getUserlist().size(); i++)
+        {
+            if (server.getUserlist().get(i).userName == login)
+            {
+                result = i;
+                break;
+            }
+        }
+        Clients cl = server.getUserlist().get(result);
+        cl.sendMessage("kick " + n);
+        showResult(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        work = new WorkWithDBInAnotherThreat(req.getParameter("login"),
+                req.getParameter("password"));
+        Thread t = new Thread(work);
+        t.start();
         server = new Server();
         server.init(8080);
-        nClient("login0");
-        nClient("login1");
-        nClient("login4");
-        nClient("login3");
-        String login = req.getParameter("login");
+        nClient("login 0");
+        nClient("login 1");
+        nClient("login 4");
+        nClient("login 3");
+        showResult(req, resp);
+        login = req.getParameter("login");
         String password = req.getParameter("password");
         nClient(login);
+    }
+
+    private void showResult(HttpServletRequest req, HttpServletResponse resp) throws IOException
+    {
         PrintWriter pw = resp.getWriter();
         pw.println("<B>The selected login is:  ");
         pw.println(login);
@@ -47,6 +83,13 @@ public class SignIn extends HttpServlet implements ServerListener
         {
             server.notify();
         }
+        pw.println("<html> \n" +
+                "     <head> \n" +
+                "          <title> \n" +
+                "               User kicking \n" +
+                "          </title>\n" +
+                "     </head> \n" +
+                "     <body> ");
         if (server.getUserlist().size() == 0)
         {
             pw.println("<p><B> NoBody is online(");
@@ -54,39 +97,41 @@ public class SignIn extends HttpServlet implements ServerListener
         for (int i=0; i<server.getUserlist().size(); i++)
         {
             try{
-                pw.println("<P><div id=\"list5\">\n" +
-                        "<li>"+ server.getUserlist().get(i).userName +"\n" +
-                        "<li>"+ server.getName() +"</li>\n" +
-                        "<li>"+ server.getUserlist().get(i).userIp +"</li>\n" +
-                        "<li>"+ server.getServerSocket().getInetAddress() + ":" +
-                        server.getServerSocket().getLocalPort() +"</li>\n" +
-                        "</li>" + "</div>");
+                pw.println("      <form name=\"Form1\"\n" +
+                        "            method=\"GET\"\n" +
+                        "            action=\"signin\">");
+//                if (work.getState(server.getUserlist().get(i).userName))
+//                {
+                    pw.println("<P><div id=\"list5\">\n" +
+                            "<li>"+ "<input type =\"text\"" + " name = \"name\"" + " value = \"" +server.getUserlist().get(i).userName +"\"\n" +
+                            "<li>"+ server.getName() +"</li>\n" +
+                            "<li>"+ server.getUserlist().get(i).userIp +"</li>\n" +
+                            "<li>"+ server.getServerSocket().getInetAddress() + ":" +
+                            server.getServerSocket().getLocalPort() +"</li>\n" +
+                            "</li>" + "</div>");
+                    pw.println("<input name=\"submit\" type=\"submit\" value=\"kick\"/>");
+                    pw.println("</form>");
+                //}
             }
-            catch (ArrayIndexOutOfBoundsException e)
+            catch (NullPointerException e)
             {
                 e.printStackTrace();
             }
         }
+        pw.println("     </body> \n" + "</html>");
         pw.close();
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-    {
-        WorkWithDBInAnotherThreat threat = new WorkWithDBInAnotherThreat(req.getParameter("login"),
-                req.getParameter("password"));
-        Thread t = new Thread(threat);
-        t.start();
-        doGet(req, resp);
     }
 
     private void nClient(String login) throws IOException
     {
         Clients client = new Clients(server);
         client.userName = login;
-        client.userIp = "localhost://" + login;
+        client.userIp = "127.0.0.1" + login;
         server.addListener(this);
         server.addUser(client);
+        String q = "UPDATE users.userinfo SET state='online' WHERE login= '" + client.userName +"'";
+        WorkWithDBInAnotherThreat db = new WorkWithDBInAnotherThreat(null, null);
+        db.SQLQ(q);
     }
 
     @Override
@@ -112,5 +157,21 @@ public class SignIn extends HttpServlet implements ServerListener
     @Override
     public void onMessageReceived(Clients user, String message) {
         System.out.println("\n<"+user.userName+"> "+message);
+    }
+
+    public Server getServer() {
+        return server;
+    }
+
+    public void setServer(Server server) {
+        this.server = server;
+    }
+
+    public Clients getClient() {
+        return client;
+    }
+
+    public void setClient(Clients client) {
+        this.client = client;
     }
 }
