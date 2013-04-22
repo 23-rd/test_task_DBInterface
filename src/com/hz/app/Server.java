@@ -55,14 +55,14 @@ public class Server extends Thread implements ServerListener {
             {
                 Socket socket = serverSocket.accept();
                 System.out.println("Client connected");
-                Clients clients1 = new Clients(this, socket);
+                //Clients clients1 = new Clients(this, socket);
                 BufferedReader in  = new BufferedReader(new
                         InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(),true);
                 String input;
                 while ((input = in.readLine()) != null) {
                     if (input.equalsIgnoreCase("exit")) break;
-                    String inp =new String(input.getBytes("UTF-8"),"windows-1251");
+                    //String inp =new String(input.getBytes("UTF-8"),"windows-1251");
                     out.println("S ::: "+input);
                     System.out.println(input);
                 }
@@ -74,8 +74,11 @@ public class Server extends Thread implements ServerListener {
 
     /***************** отправка сообщения пользователeм ****************/
 
-    public void sendMessage(Clients sender, String message) {
-            for(Clients user : userlist) {
+    public void sendMessage(Clients sender, String message)
+    {
+        boolean b = false;
+            for(Clients user : userlist)
+            {
                 try {
                     user.printStream.println("<"+(sender!=null ? sender.userName : "server")+"> "+message);
                 } catch (Exception ex) {}
@@ -86,20 +89,24 @@ public class Server extends Thread implements ServerListener {
                     int t = 0;
                     for (Clients u : userlist)
                     {
-                        if (u.userName == kickclient)
+                        if (u.userName.equals(kickclient))
                         {
                             t = userlist.indexOf(u);
+                            /*Закрываем сокет данного пользователя*/
                             u.closeSocket();
-                            //userlist.remove(t);
-                            //removeUser(userlist.get(t));
+                            /*Удаляем со списка клиентов сервера*/
+                            userlist.remove(t);
+                            /*Удаляем слушатель событий пользователя*/
+                            listenerList.remove(t);
+                            /*Изменяем статус на оффлайн*/
+                            removeUser(u);
+                            b = true;
+                            break;
                         }
-
                     }
-
-
+                    if(b) break;
                 }
             }
-
     }
 
     /******************** добавление/удаление слушателей ********************/
@@ -119,10 +126,8 @@ public class Server extends Thread implements ServerListener {
     }
 
     public void removeUser(Clients client) {
-        String q = "UPDATE users.userinfo SET state='offline', DATE = '"+
-                new Date()+"' WHERE login= \"" + client.userName +"\"";
         WorkWithDBInAnotherThreat db = new WorkWithDBInAnotherThreat(null, null);
-        db.SQLQ(q);
+        db.changeState(client.userName, "offline");
     }
 
     /******************** методы интерфейса ServerListener, getters *******************/

@@ -33,6 +33,7 @@ public class WorkWithDBInAnotherThreat implements Runnable
     private static SessionFactory sessionFactory;
     private static Session session;
 
+    /******Открытие сессии для работы с БД********/
     static
     {
         Configuration configuration = new Configuration();
@@ -43,11 +44,14 @@ public class WorkWithDBInAnotherThreat implements Runnable
         session = sessionFactory.openSession();
     }
 
+    /********Наш единственный конструктор************/
     public WorkWithDBInAnotherThreat(String login, String password)
     {
         this.login =login;
         this.password = password;
     }
+
+    /*****Поток записывающих польз-ля который ввел логин и пароль*****/
     @Override
     public void run() {
         UserInfoDB user = new UserInfoDB();
@@ -56,65 +60,48 @@ public class WorkWithDBInAnotherThreat implements Runnable
         user.setState("online");
         user.setDate(new Date());
         user.setPhoto("I2M2Y1ZDg.jpg");
-        try
-        {
-            session.beginTransaction();
-            session.save(user);
-            session.getTransaction().commit();
-        }
-        catch (RuntimeException re)
-        {
-            //session.getTransaction().rollback();
-        }
-
-        //session.close();
+        try{
+        session.beginTransaction();
+        session.saveOrUpdate(user);
+        session.getTransaction().commit();
+        closeSession();
+        }catch (RuntimeException re) {}
     }
 
-    public void SQLQ (String q)
+    /******Выполняет запросы полученные из других классов*****/
+    public void changeState (String login, String state)
     {
-        try
-        {
-            //session.beginTransaction();
-            Query qq =  session.createSQLQuery(q);
-            qq.executeUpdate();
-            session.getTransaction().commit();
-        }
-        catch (RuntimeException re)
-        {
-            //session.getTransaction().rollback();
-        }
-        //session.close();
+        try{
+        session = sessionFactory.openSession();
+        session.beginTransaction();
+        Query qq =  session.createQuery("UPDATE UserInfoDB SET state = '" + state +"' WHERE login='" + login + "'");
+        int eu = qq.executeUpdate();
+        session.getTransaction().commit();
+        closeSession();
+        }catch (RuntimeException re) {}
     }
 
+    /****Нахождение в БД пользователя и определение онлайн ли он******/
     public boolean getState(String login)
     {
         List l = null;
-        try
+        try{
+        session = sessionFactory.openSession();
+        Query qq = session.createQuery("select state FROM UserInfoDB WHERE login='" + login + "'");
+        l = qq.list();
+        closeSession();
+        }catch (RuntimeException re) {}
+        if (l!=null&&l.size() != 0)
         {
-            //session.beginTransaction();
-            Query qq = session.createQuery("SELECT * FROM users.userinfo WHERE login = '" + login + "'" );
-            l = qq.list();
-            qq.executeUpdate();
-            //session.getTransaction().commit();
-            //session.close();
-        }
-        catch (RuntimeException re)
-        {
-            //session.getTransaction().rollback();
-        }
-        if (l!=null)
-        {
-            if (l.get(0) == "online")
+            if (l.get(0).equals("online"))
             {
                 return true;
             }
         }
-
-
-            return false;
-
+    return false;
     }
 
+    /*******Закрытие сессии***********/
     public void closeSession()
     {
         session.close();

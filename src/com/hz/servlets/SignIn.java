@@ -36,8 +36,7 @@ public class SignIn extends HttpServlet implements ServerListener
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        PrintWriter out = resp.getWriter();
-        Enumeration flds = req.getParameterNames();
+        /***********Находим пользователя которого нужно отключить от сервера******/
         String n = req.getParameter("name");
         int result = 0;
         for (int i=0; i<server.getUserlist().size(); i++)
@@ -48,8 +47,10 @@ public class SignIn extends HttpServlet implements ServerListener
                 break;
             }
         }
+        /*****************Отправка сообщения серверу***********/
         Clients cl = server.getUserlist().get(result);
         cl.sendMessage("kick " + n);
+        /*********Показываем оставшихся пользователей*/
         showResult(req, resp);
     }
 
@@ -62,16 +63,18 @@ public class SignIn extends HttpServlet implements ServerListener
         t.start();
         server = new Server();
         server.init(8080);
+        /********Создаем пользователей которые якобы подключены к серверу*******/
         nClient("login 0");
         nClient("login 1");
         nClient("login 4");
         nClient("login 3");
-        showResult(req, resp);
         login = req.getParameter("login");
-        String password = req.getParameter("password");
+        password = req.getParameter("password");
         nClient(login);
+        showResult(req, resp);
     }
 
+    /***************Отображение онлайн пользователей******************/
     private void showResult(HttpServletRequest req, HttpServletResponse resp) throws IOException
     {
         PrintWriter pw = resp.getWriter();
@@ -100,8 +103,8 @@ public class SignIn extends HttpServlet implements ServerListener
                 pw.println("      <form name=\"Form1\"\n" +
                         "            method=\"GET\"\n" +
                         "            action=\"signin\">");
-//                if (work.getState(server.getUserlist().get(i).userName))
-//                {
+                if (work.getState(server.getUserlist().get(i).userName))
+                {
                     pw.println("<P><div id=\"list5\">\n" +
                             "<li>"+ "<input type =\"text\"" + " name = \"name\"" + " value = \"" +server.getUserlist().get(i).userName +"\"\n" +
                             "<li>"+ server.getName() +"</li>\n" +
@@ -111,7 +114,7 @@ public class SignIn extends HttpServlet implements ServerListener
                             "</li>" + "</div>");
                     pw.println("<input name=\"submit\" type=\"submit\" value=\"kick\"/>");
                     pw.println("</form>");
-                //}
+                }
             }
             catch (NullPointerException e)
             {
@@ -122,6 +125,7 @@ public class SignIn extends HttpServlet implements ServerListener
         pw.close();
     }
 
+    /************Создание нового клиета****************/
     private void nClient(String login) throws IOException
     {
         Clients client = new Clients(server);
@@ -129,10 +133,12 @@ public class SignIn extends HttpServlet implements ServerListener
         client.userIp = "127.0.0.1" + login;
         server.addListener(this);
         server.addUser(client);
-        String q = "UPDATE users.userinfo SET state='online' WHERE login= '" + client.userName +"'";
+        /**********Запрос на изменение статуса на онлайн и запуск его в специальном классе*********/
         WorkWithDBInAnotherThreat db = new WorkWithDBInAnotherThreat(null, null);
-        db.SQLQ(q);
+        db.changeState(client.userName, "online");
     }
+
+    /**************методы интерфейса ServerListener***********/
 
     @Override
     public void serverStarted(String ip, int port) {
@@ -158,6 +164,8 @@ public class SignIn extends HttpServlet implements ServerListener
     public void onMessageReceived(Clients user, String message) {
         System.out.println("\n<"+user.userName+"> "+message);
     }
+
+    /***********Geterrs and Seterrs**************/
 
     public Server getServer() {
         return server;

@@ -21,14 +21,6 @@ public class Clients extends Thread {
     public String userIp = "";
     private String message;
 
-/*
-    public Clients (Server server) throws IOException
-    {
-        super("User Thread");
-        this.server = server;
-    }
-*/
-
     public Clients(Server server) throws IOException {
         super("User Thread");
         this.server = server;
@@ -38,23 +30,34 @@ public class Clients extends Thread {
         start();
     }
 
-    public Clients(Server server, Socket socket) throws IOException {
-        super("User Thread");
-        this.server = server;
-        this.socket = socket;
-        bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-        printStream = new PrintStream(socket.getOutputStream(), true, "UTF-8");
-        start();
+    /*********Каждый клиент создается в новом потоке**********/
+    @Override
+    public void run() {
+        try {
+            userIp = socket.getInetAddress().getHostAddress();
+            server.onUserConnected(this);
+            //server.userlist.add(this);
+            server.sendMessage(null, "Connectet user : "+userName);
+            while(true) {
+                try {
+                    String messageReceived = message; // блокируется пока не получит строки или null!
+                    if(messageReceived==null) {
+                        //closeSocket();
+                        break;
+                    }
+                    else if(!messageReceived.isEmpty()) {
+                        // Нотификация: получено сообщение
+                        server.onMessageReceived(this, messageReceived);
+                    }
+                } catch (Exception ex) {
+                    closeSocket();
+                    break;
+                }
+            }
+        } catch(Exception ex) {}
     }
 
-    public Socket getSocket() {
-        return socket;
-    }
-
-    public void setSocket(Socket socket) {
-        this.socket = socket;
-    }
-
+    /***********Отправка сообщения серверу*************/
     public void sendMessage(String message) throws IOException {
         this.message = message;
         //String m = new String(message.getBytes("UTF-8"),"windows-1251");
@@ -66,45 +69,26 @@ public class Clients extends Thread {
         server.sendMessage(this, message);
     }
 
-    @Override
-    public void run() {
-        try {
-            userIp = socket.getInetAddress().getHostAddress();
-            server.onUserConnected(this);
-            server.userlist.add(this);
-            server.sendMessage(null, "Connectet user : "+userName);
-            while(true) {
-                try {
-                    String messageReceived = message; // блокируется пока не получит строки или null!
-                    if(messageReceived==null) {
-                        //closeSocket();
-                        break;
-                    }
-                    else if(!messageReceived.isEmpty()) {
-// Нотификация: получено сообщение
-                        server.onMessageReceived(this, messageReceived);
-// Отправляем всем сообщение
-                        server.sendMessage(this, messageReceived);
-                    }
-                } catch (Exception ex) {
-                    closeSocket();
-                    break;
-                }
-            }
-        } catch(Exception ex) {}
-    }
-
     // Удаляет пользователя из списка онлайн пользователей и освобождает ресурсы сокета
     public void closeSocket() {
         try {
-// Нотификация: пользователь отключился
+            // Нотификация: пользователь отключился
             server.onUserDisconnected(this);
-// Удаляем пользователя со списка онлайн
+            // Удаляем пользователя со списка онлайн
             //server.userlist.remove(this);
             bufferedReader.close();
             printStream.close();
             socket.close();
         } catch (Exception ex) {}
+    }
+
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
     }
 
 }
